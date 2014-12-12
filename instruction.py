@@ -11,6 +11,9 @@ class instruction:
         self.tag = tag
         self.doneBit = 0
         
+    def getType(self):
+        return self.t
+    
     def setDoneBit(self, doneBit):
         self.doneBit = doneBit
         
@@ -19,3 +22,6 @@ class instruction:
     
     def getTag(self):
         return self.tag
+    
+    def getArgs(self):
+        return self.args

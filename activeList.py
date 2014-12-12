@@ -10,6 +10,7 @@ class activeList:
         self.queue = deque()
         #self.mappingQueue = deque()
         self.length = len(self.queue)
+        self.maxSize = 32
         
     def getLength(self):
         return self.length
@@ -28,16 +29,27 @@ class activeList:
             #self.mappingQueue.popleft()
             self.length = self.length - 1
     
-    def setInsrDoneBit(self, insr):
-        # when the instruction is poped out of the instruction queues, 
-        # compare the tag to identify the instruction in the active list 
-        # and make it done.
+    def searchInstruction(self, insr):
         tag = insr.getTag()
         for i in range(len(self.queue)):
             insrToCompare = self.queue[i]
             tagToCompare = insrToCompare.getTag()
             if tagToCompare == tag:
-                insrToCompare.setDoneBit(1)
+                return insrToCompare
+    
+    def setInsrDoneBit(self, insr):
+        # when the instruction is poped out of the instruction queues, 
+        # compare the tag to identify the instruction in the active list 
+        # and make it done.
+        
+        #tag = insr.getTag()
+        #for i in range(len(self.queue)):
+        #    insrToCompare = self.queue[i]
+        #    tagToCompare = insrToCompare.getTag()
+        #    if tagToCompare == tag:
+        #        insrToCompare.setDoneBit(1)
+        destinationInsr = self.searchInstruction(insr)
+        destinationInsr.setDoneBit(1)
     
     
         
