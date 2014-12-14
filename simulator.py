@@ -1,14 +1,16 @@
-from activeList import activeList
-from freeList import freeList
-from integerQueue import integerQueue
-from regMapTable import regMapTable
-from register import register
-from instruction import instruction
-from ALU import ALU
-from insrBuffer import insrBuffer
+#from activeList import activeList
+#from freeList import freeList
+#from integerQueue import integerQueue
+#from regMapTable import regMapTable
+#from register import register
+#from instruction import instruction
+#from ALU import ALU
+#from insrBuffer import insrBuffer
 from collections import deque
-from FPunit import FPunit
-from FPqueue import FPqueue
+#from FPunit import FPunit
+#from FPqueue import FPqueue
+from basicComponents import activeList, freeList, integerQueue, \
+     regMapTable, register, instruction, ALU, insrBuffer, FPunit, FPqueue
 
 class simulator:
     def __init__(self):
