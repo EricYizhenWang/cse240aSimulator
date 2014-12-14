@@ -49,7 +49,10 @@ class activeList:
         print (destinationInsr == self.queue[0]), 'flag check'
         print destinationInsr.getTag(), self.queue[0].getTag()
     
-    
+    def updateHistory(self):
+        for i in range(len(self.queue)):
+            if self.queue[i].getDoneBit() == 1:
+                self.queue[i].addHistory(' ')
         
     
     

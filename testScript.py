@@ -38,11 +38,17 @@ def testRegTable_1():
 def testSimulator():
     sim = simulator()
     insr_queue = deque()
+    insr_counter = 0
     for i in range(10):
-        insr = instruction('I', [1, 1, 1], i)
+        insr = instruction('I', [1, 1, 1], insr_counter)
         insr_queue.append(insr)
+        insr_counter = insr_counter+1
+        
+        insr = instruction('A', [i+1, i+1, i+1], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1
+        
     sim.setInsrSet(insr_queue)
     for i in range(10):
         print 'clock index:', i
         sim.oneClock()
-        #print 'cycle' + str(i) + 'iscompleted'

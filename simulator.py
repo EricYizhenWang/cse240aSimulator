@@ -7,25 +7,21 @@ from instruction import instruction
 from ALU import ALU
 from insrBuffer import insrBuffer
 from collections import deque
+from FPunit import FPunit
+from FPqueue import FPqueue
 
 class simulator:
     def __init__(self):
         self.activeList = activeList()
-        
         self.freeList = freeList()
-        
         self.integerQueue = integerQueue()
-        
+        self.FPqueue = FPqueue()
         self.regMapTable = regMapTable()
-        
         self.ALU = ALU()
-        
+        self.FPA = FPunit('A')
         self.initializeRegMap()
-        
         self.insrSet = deque()
-        
         self.fetchedList = insrBuffer()
-        
         self.decodedList = insrBuffer()
      
     def setInsrSet(self, insrSet):
@@ -60,10 +56,9 @@ class simulator:
         
     def resolveOperand(self, insr):
         # This function resolves the insr's arguments into physical registers
-        # 0 means the value is pre-loaded
         args = insr.getArgs()
         type_insr = insr.getType()
-        if type_insr == 'I':
+        if (type_insr == 'I') or (type_insr == 'A'):
             #resolveTheOperand
             #print 'This is executed', args
             for i in range(1,3):
@@ -102,23 +97,29 @@ class simulator:
     
     def decode_edge(self, decode_q):
         self.decodedList.addInsrSet(decode_q)
-    
+
     def issue_calc(self):
         print 'issueing'
         l = min(4, self.decodedList.getLength())
         toActiveList = deque()
         toIntegerQueue = deque()
+        toFPqueue = deque()
         for i in range(l):
             insr = self.decodedList.popInstruction()
+            insr_type = insr.getType()
             toActiveList.append(insr)
             #TODO: add different type of insr here
-            toIntegerQueue.append(insr)
+            if insr_type == 'I':
+                toIntegerQueue.append(insr)
+            elif (insr_type == 'A') or (insr_type == 'M'):
+                toFPqueue.append(insr)
             insr.addHistory('I')
-        return toActiveList, toIntegerQueue
+        return toActiveList, toIntegerQueue, toFPqueue
     
-    def issue_edge(self, toActiveList, toIntegerQueue):
+    def issue_edge(self, toActiveList, toIntegerQueue, toFPqueue):
         self.activeList.addInsrSet(toActiveList)
         self.integerQueue.addInsrSet(toIntegerQueue)
+        self.FPqueue.addInsrSet(toFPqueue)
         
     def execution_calc(self):
         print 'execution'
@@ -130,12 +131,33 @@ class simulator:
             self.activeList.setInsrDoneBit(insr)
             insr.addHistory('E')
             
+        insr = self.FPA.popInstruction()
+        print insr
+        if insr == None:
+            pass
+        else: 
+            tag = insr.getTag()
+            self.activeList.setInsrDoneBit(insr)
+            #insr.addHistory('A')
+            
+        # get the refill units to ALU ready
+        popedInsr = self.integerQueue.sendInsrForExecution()
+        popedFPInsr = self.FPqueue.sendInsrForExecution()
+        return popedInsr, popedFPInsr
+        
+    def execution_edge(self, insrToFill, insrToFillFP):
         # Then fill the pipeline with the next instruction
         #if (len(self.integerQueue.queue)>0) and (self.ALU.getLength() == 0):
-        popedInsr = self.integerQueue.sendInsrForExecution()
-        if popedInsr != 0:
-            self.ALU.addInstruction(popedInsr)
+        if insrToFill != 0:
+            self.ALU.addInstruction(insrToFill)
             
+        if insrToFillFP != 0:
+            self.FPA.addInstruction(insrToFillFP)
+        else:
+            self.FPA.addInstruction(None)
+        self.FPA.updateHistory()
+        self.activeList.updateHistory()
+        
     def commit_calc(self):
         print 'commiting'
         for i in range(min(4, self.activeList.getLength())):
@@ -143,7 +165,7 @@ class simulator:
             if insr != 0:
                 insr.addHistory('C')
                 print insr.getHistory()
-                print 'commiting instruction', insr
+                print 'commiting instruction', insr.getTag()
                 args = insr.getArgs()
                 destination_arg = args[0]
                 # reset that argument to 0
@@ -157,39 +179,32 @@ class simulator:
         for i in range(self.integerQueue.getLength()):
             insr = self.integerQueue.getElem(i)
             insr.addHistory(' ')
+            
+    def updateHistoryInFPQueue(self):
+        for i in range(self.FPqueue.getLength()):
+            insr = self.FPqueue.getElem(i)
+            insr.addHistory(' ')
     
     def oneClock(self):
         
         # The calc part
         toDecode = self.fetch_calc()
         toIssue = self.decode_calc()
-        toActiveList, toIntegerQueue = self.issue_calc()
-        self.execution_calc()
+        toActiveList, toIntegerQueue, toFPqueue = self.issue_calc()
+        toFill, toFillFP = self.execution_calc()
         self.commit_calc()
         
         # the edge part
         self.updateHistoryInInsrSet()
         self.updateHistoryInIntegerQueue()
+        self.updateHistoryInFPQueue()
+        
         self.fetch_edge(toDecode)
         self.decode_edge(toIssue)
-        self.issue_edge(toActiveList, toIntegerQueue)
+        self.issue_edge(toActiveList, toIntegerQueue, toFPqueue)
+        self.execution_edge(toFill, toFillFP)
         
-    
-    def processInsr(self, insr):
-        executedInsr = self.ALU.popInstruction()
-        if executedInsr != 0:
-            tag = executedInsr.getTag()
-            self.activeList.setInsrDoneBit(executedInsr)
-        if len(self.integerQueue.queue)>0:
-            popedInsr = self.integerQueue.sendInsrForExecution()
-        if len(self.activeList.queue) > 0:
-            toPopInsr = self.activeList.graduateInstruction()
-            print toPopInsr.getTag()
         
-        self.resolveOperand(insr)
-        self.activeList.addInstruction(insr)
-        self.integerQueue.addInstruction(insr)
-        self.ALU.addInstruction(insr)
         
     
     
