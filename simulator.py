@@ -11,6 +11,7 @@ class simulator:
         self.regMapTable = regMapTable()
         self.ALU = ALU()
         self.FPA = FPunit('A')
+        self.FPM = FPunit('M')
         self.initializeRegMap()
         self.insrSet = deque()
         self.fetchedList = insrBuffer()
@@ -55,7 +56,7 @@ class simulator:
         # This function resolves the insr's arguments into physical registers
         args = insr.getArgs()
         type_insr = insr.getType()
-        if (type_insr == 'I') or (type_insr == 'A'):
+        if (type_insr == 'I') or (type_insr == 'A') or (type_insr == 'M'):
             #resolveTheOperand
             #print 'This is executed', args
             for i in range(1,3):
@@ -122,9 +123,8 @@ class simulator:
         self.activeList.addInsrSet(toActiveList)
         self.integerQueue.addInsrSet(toIntegerQueue)
         self.FPqueue.addInsrSet(toFPqueue)
-        
-    def execution_calc(self):
-        print 'execution'
+    
+    def ALU_calc(self):
         print 'ALUqueue length', self.ALU.getLength()
         insr = self.ALU.popInstruction()
         print 'insr=', insr
@@ -133,33 +133,58 @@ class simulator:
             self.activeList.setInsrDoneBit(insr)
             insr.addHistory('E')
             
+    def FPA_calc(self):
+        #
         insr = self.FPA.popInstruction()
         print insr
         if insr == None:
             pass
         else: 
             tag = insr.getTag()
-            self.activeList.setInsrDoneBit(insr)
-            #insr.addHistory('A')
+            self.activeList.setInsrDoneBit(insr) 
             
+    def FPM_calc(self):
+        #
+        insr = self.FPM.popInstruction()
+        print insr
+        if insr == None:
+            pass
+        else: 
+            tag = insr.getTag()
+            self.activeList.setInsrDoneBit(insr)    
+        
+    def execution_calc(self):
+        print 'execution'
+        self.ALU_calc()
+        self.FPA_calc()   
+        self.FPM_calc()
         # get the refill units to ALU ready
         popedInsr = self.integerQueue.sendInsrForExecution()
-        popedFPInsr = self.FPqueue.sendInsrForExecution()
-        self.execution_r = [popedInsr, popedFPInsr]
+        popedFPInsr1 = self.FPqueue.sendInsrForExecution('A')
+        popedFPInsr2 = self.FPqueue.sendInsrForExecution('M')
+        self.execution_r = [popedInsr, popedFPInsr1, popedFPInsr2]
         
     def execution_edge(self):
         # Then fill the pipeline with the next instruction
         #if (len(self.integerQueue.queue)>0) and (self.ALU.getLength() == 0):
-        insrToFill, insrToFillFP = self.execution_r
+        insrToFill, insrToFillFPA, insrToFillFPM = self.execution_r
         
         if insrToFill != 0:
             self.ALU.addInstruction(insrToFill)
             
-        if insrToFillFP != 0:
-            self.FPA.addInstruction(insrToFillFP)
+        if insrToFillFPA != 0:
+            self.FPA.addInstruction(insrToFillFPA)
         else:
             self.FPA.addInstruction(None)
+            
+        if insrToFillFPM != 0:
+            self.FPM.addInstruction(insrToFillFPM)
+        else:
+            self.FPM.addInstruction(None)
+        
+            
         self.FPA.updateHistory()
+        self.FPM.updateHistory()
         self.activeList.updateHistory()
         
     def commit_calc(self):

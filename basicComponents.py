@@ -141,7 +141,7 @@ class FPqueue:
         self.queue.rotate(index)
         return insr
         
-    def searchExecutableInsr(self):
+    def searchExecutableInsr(self, t):
         # This function searches all instructions that are ready to execute
         # Here basically it means its operands are ready
         
@@ -149,19 +149,21 @@ class FPqueue:
         for i in range(len(self.queue)):
             insr = self.queue[i]
             args = insr.getArgs()
+            type_insr = insr.getType()
             
-            flag = 1
-            for j in range(1,len(args)):
-                if args[j] == 0:
-                    pass
-                elif args[j].getBusyBit() == 1:
-                    flag = 0
-            if flag == 1:
-                insr_list.append([self.queue[i], i])
+            if type_insr == t:
+                flag = 1
+                for j in range(1,len(args)):
+                    if args[j] == 0:
+                        pass
+                    elif args[j].getBusyBit() == 1:
+                        flag = 0
+                if flag == 1:
+                    insr_list.append([self.queue[i], i])
         return insr_list
         
-    def sendInsrForExecution(self):
-        l = self.searchExecutableInsr()
+    def sendInsrForExecution(self, t):
+        l = self.searchExecutableInsr(t)
         if len(l) > 0:
             toPop = l[0]
             return self.popInstruction(toPop[1])
