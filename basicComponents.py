@@ -235,19 +235,6 @@ class integerQueue:
     
     def getElem(self, index):
         return self.queue[index]
-    
-    # This part involves combinatorial logic and should have been done outside
-    # the object!
-    def resolveOperand(self, insr, regMap):
-        # This function resolves the instruction operand from logical register
-        # to physical register
-        
-        # the case for integer value
-        
-        #args_phy.append(regMap.getMapping(args[1]))
-        #args_phy.append(regMap.getMapping(args[2]))
-        return 0
-        
         
     def addInstruction(self, insr):
         self.queue.append(insr)
@@ -283,7 +270,6 @@ class integerQueue:
             if flag == 1:
                 insr_list.append([self.queue[i], i])
         return insr_list
-        #if args[1].
         
     def sendInsrForExecution(self):
         l = self.searchExecutableInsr()

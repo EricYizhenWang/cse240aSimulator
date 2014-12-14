@@ -1,14 +1,4 @@
-#from activeList import activeList
-#from freeList import freeList
-#from integerQueue import integerQueue
-#from regMapTable import regMapTable
-#from register import register
-#from instruction import instruction
-#from ALU import ALU
-#from insrBuffer import insrBuffer
 from collections import deque
-#from FPunit import FPunit
-#from FPqueue import FPqueue
 from basicComponents import activeList, freeList, integerQueue, \
      regMapTable, register, instruction, ALU, insrBuffer, FPunit, FPqueue
 
@@ -25,6 +15,11 @@ class simulator:
         self.insrSet = deque()
         self.fetchedList = insrBuffer()
         self.decodedList = insrBuffer()
+        
+        self.fetch_r = deque()
+        self.decode_r = deque()
+        self.issue_r = []
+        self.execution_r = []
      
     def setInsrSet(self, insrSet):
         self.insrSet = insrSet
@@ -80,9 +75,11 @@ class simulator:
             new_elem = self.getElemFromInsrSet()
             new_elem.addHistory('F')
             insrSet.append(new_elem)
-        return insrSet
+            
+        self.fetch_r = insrSet
     
-    def fetch_edge(self, insrSet):
+    def fetch_edge(self):
+        insrSet = self.fetch_r
         self.fetchedList.addInsrSet(insrSet)
     
     def decode_calc(self):
@@ -95,9 +92,11 @@ class simulator:
             self.resolveOperand(insr)
             insr.addHistory('D')
             decode_q.append(insr)
-        return decode_q
+        
+        self.decode_r = decode_q
     
-    def decode_edge(self, decode_q):
+    def decode_edge(self):
+        decode_q = self.decode_r
         self.decodedList.addInsrSet(decode_q)
 
     def issue_calc(self):
@@ -116,9 +115,10 @@ class simulator:
             elif (insr_type == 'A') or (insr_type == 'M'):
                 toFPqueue.append(insr)
             insr.addHistory('I')
-        return toActiveList, toIntegerQueue, toFPqueue
+        self.issue_r = [toActiveList, toIntegerQueue, toFPqueue]
     
-    def issue_edge(self, toActiveList, toIntegerQueue, toFPqueue):
+    def issue_edge(self):
+        toActiveList, toIntegerQueue, toFPqueue = self.issue_r
         self.activeList.addInsrSet(toActiveList)
         self.integerQueue.addInsrSet(toIntegerQueue)
         self.FPqueue.addInsrSet(toFPqueue)
@@ -145,11 +145,13 @@ class simulator:
         # get the refill units to ALU ready
         popedInsr = self.integerQueue.sendInsrForExecution()
         popedFPInsr = self.FPqueue.sendInsrForExecution()
-        return popedInsr, popedFPInsr
+        self.execution_r = [popedInsr, popedFPInsr]
         
-    def execution_edge(self, insrToFill, insrToFillFP):
+    def execution_edge(self):
         # Then fill the pipeline with the next instruction
         #if (len(self.integerQueue.queue)>0) and (self.ALU.getLength() == 0):
+        insrToFill, insrToFillFP = self.execution_r
+        
         if insrToFill != 0:
             self.ALU.addInstruction(insrToFill)
             
@@ -190,10 +192,10 @@ class simulator:
     def oneClock(self):
         
         # The calc part
-        toDecode = self.fetch_calc()
-        toIssue = self.decode_calc()
-        toActiveList, toIntegerQueue, toFPqueue = self.issue_calc()
-        toFill, toFillFP = self.execution_calc()
+        self.fetch_calc()
+        self.decode_calc()
+        self.issue_calc()
+        self.execution_calc()
         self.commit_calc()
         
         # the edge part
@@ -201,10 +203,10 @@ class simulator:
         self.updateHistoryInIntegerQueue()
         self.updateHistoryInFPQueue()
         
-        self.fetch_edge(toDecode)
-        self.decode_edge(toIssue)
-        self.issue_edge(toActiveList, toIntegerQueue, toFPqueue)
-        self.execution_edge(toFill, toFillFP)
+        self.fetch_edge()
+        self.decode_edge()
+        self.issue_edge()
+        self.execution_edge()
         
         
         
