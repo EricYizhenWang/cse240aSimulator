@@ -12,9 +12,13 @@ class freeList:
     def setBusyBit(self, index, value):
         self.busyTable[index] = value
         
+    def getBusyBit(self, index):
+        return self.busyTable[index]
+        
     def popReg(self):
         # may cause exception if no more element in the queue.
         toPop = self.queue[0]
+        toPop.setBusyBit(1)
         tag = toPop.getTag()
         self.setBusyBit(tag, 1)
         self.queue.popleft()
@@ -22,6 +26,9 @@ class freeList:
         
     def addReg(self, reg):
         self.queue.append(reg)
+        reg.setBusyBit(0)
+        tag = reg.getTag()
+        self.setBusyBit(tag, 0)
         # WATCH OUT: the busy bit is not set to 0 upon its return to the freeList
         # but upon its value is written. (so that we can broadcast the value)
         

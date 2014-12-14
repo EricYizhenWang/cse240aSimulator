@@ -10,6 +10,13 @@ class instruction:
         self.args = args
         self.tag = tag
         self.doneBit = 0
+        # This regMapEntry stores the old logical-physical register mapping.
+        self.regMapEntry = []
+        
+    def getRegMapInfo(self):
+        return self.regMapEntry
+    def setRegMapInfo(self, mapEntry):
+        self.regMapEntry = mapEntry
         
     def getType(self):
         return self.t
@@ -25,3 +32,9 @@ class instruction:
     
     def getArgs(self):
         return self.args
+    
+    def setArgs(self, args):
+        self.args = args
+        
+    def setArgs_i(self, arg, i):
+        self.args[i] = arg

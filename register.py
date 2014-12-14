@@ -4,6 +4,7 @@ class register:
         # It also has a unique (type, digit ID) couple to identify.
         self.t = typeR
         self.tag = tag
+        self.busyBit = 0
         
     def getType(self):
         return self.t
@@ -11,3 +12,7 @@ class register:
         return self.tag
     def getID(self):
         return [self.t, self.tag]
+    def getBusyBit(self):
+        return self.busyBit
+    def setBusyBit(self, value):
+        self.busyBit = value

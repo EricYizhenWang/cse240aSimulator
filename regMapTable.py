@@ -3,13 +3,13 @@ class regMapTable:
     def __init__(self):
         self.maxSize = 32
         self.table = [0] * self.maxSize
-        self.f = freeList()
+        #self.f = freeList()
         
-    def getFreeList(self):
-        return self.f
+    #def getFreeList(self):
+        #return self.f
     
-    def getNumFreeReg(self):
-        return self.f.getNumFree()
+    #def getNumFreeReg(self):
+        #return self.f.getNumFree()
     
     def getMapping(self, regLogicalIndex):
         return self.table[regLogicalIndex]
@@ -17,12 +17,13 @@ class regMapTable:
     def setMapping(self, regLogicalIndex, physicalReg):
         self.table[regLogicalIndex] = physicalReg
         
-    def assignNewMapping(self, regLogicalIndex):
+    def assignNewMapping(self, regLogicalIndex, f_list):
         # This function maps a logical register to a physical register 
         # It returns the old physical register associated with that logical 
         # register and update the mapping.
         old_value = self.table[regLogicalIndex]
-        new_value = self.f.popReg()
+        #new_value = self.f.popReg()
+        new_value = f_list.popReg()
         #self.table[regLogicalIndex] = new_value
         self.setMapping(regLogicalIndex, new_value)
         return [regLogicalIndex, old_value, new_value]

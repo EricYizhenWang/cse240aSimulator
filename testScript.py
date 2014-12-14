@@ -2,6 +2,9 @@ from instruction import instruction
 from activeList import activeList
 
 from regMapTable import regMapTable
+
+from simulator import simulator
+
 def testActiveList_1():
     a = activeList()
     i1 = instruction('I', [], 0)
@@ -28,8 +31,12 @@ def testRegTable_1():
     for i in range(32):
         reg_map.assignNewMapping(2)
     print reg_map.getNumFreeReg
-    
     print reg_map.getMapping(1).getTag()
     print reg_map.getMapping(2).getTag()
     
-
+def testSimulator():
+    sim = simulator()
+    for i in range(10):
+        insr = instruction('I', [1, 2, 2], i)
+        sim.processInsr(insr)
+        print 'cycle' + str(i) + 'iscompleted'

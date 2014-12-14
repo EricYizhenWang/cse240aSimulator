@@ -20,14 +20,15 @@ class activeList:
     def addInstruction(self, insr):
         self.queue.append(insr)
         #self.mappingQueue.append(mapping)
-        self.length = self.length + 1
+        #self.length = self.length + 1
         
     def graduateInstruction(self):
-        insr = self.queue[0]
-        if insr.getDoneBit() == 1:
-            self.queue.popleft()
+        if len(self.queue) > 0:
+            insr = self.queue[0]
+            if insr.getDoneBit() == 1:
+                self.queue.popleft()
             #self.mappingQueue.popleft()
-            self.length = self.length - 1
+            #self.length = self.length - 1
     
     def searchInstruction(self, insr):
         tag = insr.getTag()
