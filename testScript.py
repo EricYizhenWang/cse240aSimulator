@@ -4,6 +4,7 @@ from activeList import activeList
 from regMapTable import regMapTable
 
 from simulator import simulator
+from collections import deque
 
 def testActiveList_1():
     a = activeList()
@@ -36,7 +37,12 @@ def testRegTable_1():
     
 def testSimulator():
     sim = simulator()
+    insr_queue = deque()
     for i in range(10):
-        insr = instruction('I', [1, 2, 2], i)
-        sim.processInsr(insr)
-        print 'cycle' + str(i) + 'iscompleted'
+        insr = instruction('I', [1, 1, 1], i)
+        insr_queue.append(insr)
+    sim.setInsrSet(insr_queue)
+    for i in range(10):
+        print 'clock index:', i
+        sim.oneClock()
+        #print 'cycle' + str(i) + 'iscompleted'

@@ -1,6 +1,5 @@
 from collections import deque
-
-class integerQueue:
+class FPqueue:
     def __init__(self):
         self.queue = deque()
         self.maxSize = 16
@@ -37,8 +36,7 @@ class integerQueue:
         insr = self.queue.popleft()
         self.queue.rotate(index)
         return insr
-    
-    # This is also combinatoric logic that should be done outside the object!    
+        
     def searchExecutableInsr(self):
         # This function searches all instructions that are ready to execute
         # Here basically it means its operands are ready
@@ -50,7 +48,6 @@ class integerQueue:
             
             flag = 1
             for j in range(1,len(args)):
-                #print args[j]
                 if args[j] == 0:
                     pass
                 elif args[j].getBusyBit() == 1:
@@ -58,14 +55,11 @@ class integerQueue:
             if flag == 1:
                 insr_list.append([self.queue[i], i])
         return insr_list
-        #if args[1].
         
     def sendInsrForExecution(self):
         l = self.searchExecutableInsr()
         if len(l) > 0:
             toPop = l[0]
-            #print toPop, 'toPop'
             return self.popInstruction(toPop[1])
         else:
             return 0
-            

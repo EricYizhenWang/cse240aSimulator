@@ -2,6 +2,9 @@ from collections import deque
 class ALU:
     def __init__(self):
         self.queue = deque()
+        
+    def getLength(self):
+        return len(self.queue)
     
     def addInstruction(self, insr):
         self.queue.append(insr)
@@ -9,6 +12,9 @@ class ALU:
     def popInstruction(self):
         if len(self.queue) != 0:
             insr = self.queue.popleft()
+            arg = insr.getArgs()
+            destination_arg = arg[0]
+            destination_arg.setBusyBit(0)
             return insr
         else:
             return 0

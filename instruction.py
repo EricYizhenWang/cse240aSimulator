@@ -12,6 +12,14 @@ class instruction:
         self.doneBit = 0
         # This regMapEntry stores the old logical-physical register mapping.
         self.regMapEntry = []
+        # This entry stores the execution history of the instruction
+        self.history = []
+        
+    def getHistory(self):
+        return self.history
+    
+    def addHistory(self, act):
+        self.history.append(act)
         
     def getRegMapInfo(self):
         return self.regMapEntry
