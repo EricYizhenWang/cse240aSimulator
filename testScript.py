@@ -1,8 +1,4 @@
-from instruction import instruction
-from activeList import activeList
-
-from regMapTable import regMapTable
-
+from basicComponents import instruction, activeList, regMapTable
 from simulator import simulator
 from collections import deque
 
@@ -69,6 +65,25 @@ def testSimulator_2():
         insr = instruction('M', [i+2, i+2, i+2], insr_counter)
         insr_queue.append(insr)
         insr_counter = insr_counter+1        
+        
+    sim.setInsrSet(insr_queue)
+    for i in range(20):
+        print 'clock index:', i
+        sim.oneClock()
+
+
+def testSimulator_3():
+    sim = simulator()
+    insr_queue = deque()
+    insr_counter = 0
+    for i in range(2):
+        insr = instruction('S', [1, 1, 1], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1
+        
+        insr = instruction('L', [1, 1, 1], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1     
         
     sim.setInsrSet(insr_queue)
     for i in range(20):

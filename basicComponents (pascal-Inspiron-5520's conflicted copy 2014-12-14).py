@@ -19,19 +19,9 @@ class instruction:
         # This entry remembers its ID in the address_queue for the sake of 
         # indetermination matrix implementation
         self.addrID = None
-    
-    
-    def getAddrID(self):
-        return self.addrID  
-    
-    def setAddrID(self, ID):
-        self.addrID = ID
         
     def getHistory(self):
         return self.history
-    
-    def popHistory(self):
-        self.history.pop()
 
     def getAddrID(self):
         return self.addrID  
@@ -44,6 +34,7 @@ class instruction:
         
     def getRegMapInfo(self):
         return self.regMapEntry
+    
     def setRegMapInfo(self, mapEntry):
         self.regMapEntry = mapEntry
         
@@ -432,7 +423,10 @@ class addressQueue():
             
     def addInstruction(self, insr):
         ID = self.popID()
-        insr.setAddrID(ID)
+        print ID
+        print dir(insr)
+        print type(insr)
+        insr.setAddrID(10)
         #insr.addrID = ID
         
         args = insr.getArgs()
@@ -445,15 +439,14 @@ class addressQueue():
     def addInsrSet(self, insrSet):
         for i in range(len(insrSet)):
             insr = insrSet.popleft()
+            print 'this is addInsrSet'
+            insr.getAddrID()
+            print 'Done'
             self.addInstruction(insr)    
         
-    def compareInsr(self, insr1, insr2):
-        tag1 = None
-        tag2 = None
-        if insr1 != None:
-            tag1 = insr1.getTag()
-        if insr2 != None:
-            tag2 = insr2.getTag()
+    def compareInsr(insr1, insr2):
+        tag1 = insr1.getTag()
+        tag2 = insr2.getTag()
         return tag1 == tag2
     
     def popInstruction(self):
@@ -462,8 +455,8 @@ class addressQueue():
         insrID = insr.getAddrID()
         insr_type = insr.getType()
         if insr_type == 'S':
-            for i in range(self.numMax):
-                self.setMatEntry(i, insrID, 0)
+            for i in range(self.maxSize):
+                setMatEntry(i, insrID, 0)
         # return the ID tag
         insr_ID = insr.getAddrID()
         self.addID(insr_ID)
@@ -476,20 +469,17 @@ class addressQueue():
             insr = q[i]
             args = insr.getArgs()
             insr_type = insr.getType()
-            ID = insr.getAddrID()
-            if self.isReady[ID] == 0:
-                if insr_type == 'L':
-                    srs = args[1]
-                    # if the source is ready
-                    if srs.getBusyBit() == 0:
-                        self.toCalc = insr
-                        print self.toCalc.getTag(), 'hello'
-                        return insr
-                elif insr_type == 'S':
-                    if (args[0].getBusyBit() == 0) and (args[1].getBusyBit() == 0):
-                        self.toCalc = insr
-                        print self.toCalc.getTag(), 'hello'
-                        return insr
+            
+            if insr_type == 'L':
+                srs = args[1]
+                # if the source is ready
+                if srs.getBusyBit() == 0:
+                    self.toCalc = insr
+                    return insr
+            elif insr_type == 'S':
+                if (args[0].getBusyBit() == 0) and (args[1].getBusyBit() == 0):
+                    self.toCalc = insr
+                    return insr
         return None
             
     def sendForAddressCalc_edge(self):
@@ -510,16 +500,5 @@ class addressQueue():
             if self.isReady[ID] == 1:
                 toSend.append(q[i])
         return toSend
-    
-    def updateHistory(self):
-        q = self.queue
-        l = len(q)
-        for i in range(l):
-            insr1 = q[i]
-            insr2 = self.toCalc
-            if self.compareInsr(insr1, insr2):
-                insr1.addHistory('AddrA')
-            else:
-                insr1.addHistory(' ')
             
                 
