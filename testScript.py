@@ -54,7 +54,36 @@ def testSimulator_2():
     insr_queue = deque()
     insr_counter = 0
     for i in range(10):
-        insr = instruction('I', [1, 1, 1], insr_counter)
+        #insr = instruction('I', [1, 1, 1], insr_counter)
+        #insr_queue.append(insr)
+        #insr_counter = insr_counter+1
+        
+        insr = instruction('A', [i+1, i+1, i+1], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1
+        
+        insr = instruction('M', [i+2, i+2, i+2], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1        
+        
+    insr = insr_queue[0]
+    sim.setInsrSet(insr_queue)
+    for i in range(20):
+        print 'clock index:', i
+        sim.oneClock()
+        #print insr.getHistory()
+
+
+def testSimulator_4():
+    sim = simulator()
+    insr_queue = deque()
+    insr_counter = 0
+    for i in range(2):
+        insr = instruction('S', [1, 1, 10], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1
+        
+        insr = instruction('L', [1, 1, 1], insr_counter)
         insr_queue.append(insr)
         insr_counter = insr_counter+1
         
@@ -67,17 +96,19 @@ def testSimulator_2():
         insr_counter = insr_counter+1        
         
     sim.setInsrSet(insr_queue)
-    for i in range(20):
+    insr = insr_queue[0]
+    for i in range(30):
         print 'clock index:', i
         sim.oneClock()
-
+        #print insr.getHistory(), 'history 00'
+        
 
 def testSimulator_3():
     sim = simulator()
     insr_queue = deque()
     insr_counter = 0
-    for i in range(2):
-        insr = instruction('S', [1, 1, 1], insr_counter)
+    for i in range(3):
+        insr = instruction('S', [1, 1, 10], insr_counter)
         insr_queue.append(insr)
         insr_counter = insr_counter+1
         
@@ -86,6 +117,8 @@ def testSimulator_3():
         insr_counter = insr_counter+1     
         
     sim.setInsrSet(insr_queue)
-    for i in range(20):
+    insr = insr_queue[0]
+    for i in range(30):
         print 'clock index:', i
         sim.oneClock()
+        #print insr.getHistory(), 'history 00'

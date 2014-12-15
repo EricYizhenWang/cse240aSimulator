@@ -194,7 +194,7 @@ class FPqueue:
         
 class FPunit:
     def __init__(self, t):
-        self.queue = deque([None, None, None])
+        self.queue = deque([None, None])
         self.finishTime = 0
         self.inUse = 0
         self.t = t
@@ -215,6 +215,7 @@ class FPunit:
     def popInstruction(self):
         if len(self.queue) != 0:
             insr = self.queue.popleft()
+            #print insr, 'insr'
             if insr == None:
                 return None
             else:
@@ -222,8 +223,8 @@ class FPunit:
                 destination_arg = arg[0]
                 destination_arg.setBusyBit(0)
                 return insr
-        else:
-            return 0    
+        #else:
+            #return 0    
     
     def updateHistory(self):
         for i in range(len(self.queue)):
@@ -382,10 +383,10 @@ class activeList:
         # compare the tag to identify the instruction in the active list 
         # and make it done.
         destinationInsr = self.searchInstruction(insr)
-        print 'destination', destinationInsr
+        #print 'destination', destinationInsr
         destinationInsr.setDoneBit(1)
-        print (destinationInsr == self.queue[0]), 'flag check'
-        print destinationInsr.getTag(), self.queue[0].getTag()
+        #print (destinationInsr == self.queue[0]), 'flag check'
+        #print destinationInsr.getTag(), self.queue[0].getTag()
     
     def updateHistory(self):
         for i in range(len(self.queue)):
@@ -484,11 +485,13 @@ class addressQueue():
                     if srs.getBusyBit() == 0:
                         self.toCalc = insr
                         print self.toCalc.getTag(), 'hello'
+                        insr.addHistory('AddrC')
                         return insr
                 elif insr_type == 'S':
                     if (args[0].getBusyBit() == 0) and (args[1].getBusyBit() == 0):
                         self.toCalc = insr
-                        print self.toCalc.getTag(), 'hello'
+                        #print self.toCalc.getTag(), 'hello'
+                        insr.addHistory('AddrC')
                         return insr
         return None
             
@@ -507,7 +510,7 @@ class addressQueue():
         for i in range(l):
             insr = q[i]
             ID = insr.getAddrID()
-            if self.isReady[ID] == 1:
+            if (self.isReady[ID] == 1) and (insr.getDoneBit()==0):
                 toSend.append(q[i])
         return toSend
     
@@ -518,8 +521,27 @@ class addressQueue():
             insr1 = q[i]
             insr2 = self.toCalc
             if self.compareInsr(insr1, insr2):
-                insr1.addHistory('AddrA')
+                #insr1.addHistory('AddrA')
+                pass
             else:
-                insr1.addHistory(' ')
+                if insr1.getDoneBit() != 1:
+                    insr1.addHistory(' ')
+                
+class SLunit():
+    def __init__(self):
+        self.queue = deque()
+    
+    def addInstruction(self, insr):
+        self.queue.append(insr)
+        
+    def popInstruction(self):
+        #print 'SLUnit Length', len(self.queue)
+        if len(self.queue)!=0:
+            insr = self.queue.popleft()
+            #print 'SLUnit Length', len(self.queue)
+            #print insr.getTag()
+            return insr
+        else:
+            return None
             
                 

@@ -1,6 +1,8 @@
 from collections import deque
 from basicComponents import activeList, freeList, integerQueue, \
-     regMapTable, register, instruction, ALU, insrBuffer, FPunit, FPqueue, addressQueue
+     regMapTable, register, instruction, ALU, insrBuffer, FPunit, FPqueue, addressQueue, SLunit
+
+from copy import deepcopy
 
 class simulator:
     def __init__(self):
@@ -13,6 +15,7 @@ class simulator:
         self.ALU = ALU()
         self.FPA = FPunit('A')
         self.FPM = FPunit('M')
+        self.SLunit = SLunit()
         self.initializeRegMap()
         self.insrSet = deque()
         self.fetchedList = insrBuffer()
@@ -30,13 +33,15 @@ class simulator:
         self.issue_r = []
         self.execution_r = []
         self.ls_r = None
+        
+        self.toSetDoneBit = []
      
     def setInsrSet(self, insrSet):
         self.insrSet = insrSet
     
     def getElemFromInsrSet(self):
         if len(self.insrSet)>0:
-            print len(self.insrSet)
+            #print len(self.insrSet)
             return self.insrSet.popleft()
     
     def updateHistoryInInsrSet(self):
@@ -56,7 +61,7 @@ class simulator:
             # register and update the mapping.
             old_value = self.regMapTable.table[regLogicalIndex]
             new_value = self.freeList.popReg()
-            print new_value.getTag()
+            #print new_value.getTag()
             self.regMapTable.setMapping(regLogicalIndex, new_value)
             self.freeList.setBusyBit(new_value.getTag(), 1)
             return [regLogicalIndex, old_value, new_value]
@@ -67,7 +72,7 @@ class simulator:
         #print 'This is executed', args
         for i in range(1,3):
             new_arg = self.regMapTable.getMapping(args[i])
-            print i, new_arg.getTag()
+            #print i, new_arg.getTag()
             insr.setArgs_i(new_arg, i)
         #resolveTheDestination
         newMapInfo = self.assignNewMapping(args[0])
@@ -126,7 +131,7 @@ class simulator:
         self.fetchedList.addInsrSet(insrSet)
     
     def decode_calc(self):
-        print 'decoding'
+        #print 'decoding'
         decode_q = deque()
         l = min(4, self.fetchedList.getLength())
         for i in range(l):
@@ -143,7 +148,7 @@ class simulator:
         self.decodedList.addInsrSet(decode_q)
 
     def issue_calc(self):
-        print 'issuing'
+        #print 'issuing'
         l = min(4, self.decodedList.getLength())
         toActiveList = deque()
         toIntegerQueue = deque()
@@ -171,70 +176,123 @@ class simulator:
         self.addrQueue.addInsrSet(toAddrQueue)
     
     def ALU_calc(self):
-        print 'ALUqueue length', self.ALU.getLength()
+        popedInsr = self.integerQueue.sendInsrForExecution()
+        if popedInsr != 0:
+            self.ALU.addInstruction(popedInsr)
+        #print 'ALUqueue length', self.ALU.getLength()
         insr = self.ALU.popInstruction()
-        print 'insr=', insr
+        #print 'insr=', insr
         if insr != 0:
             tag = insr.getTag()
-            self.activeList.setInsrDoneBit(insr)
+            #self.activeList.setInsrDoneBit(insr)
+            self.toSetDoneBit.append(insr)
             insr.addHistory('E')
+            
+            # Set busybits to zeros
+            args = insr.getArgs()
+            args[0].setBusyBit(0)
             
     def FPA_calc(self):
         #
+        
+        popedFPInsr1 = self.FPqueue.sendInsrForExecution('A')
+        if popedFPInsr1 != 0:
+            self.FPA.addInstruction(popedFPInsr1)
+        else:
+            self.FPA.addInstruction(None)
+        self.FPA.updateHistory() 
+        #FPA.addInstruction()
         insr = self.FPA.popInstruction()
-        print insr
+        #print insr
         if insr == None:
             pass
         else: 
             tag = insr.getTag()
-            self.activeList.setInsrDoneBit(insr) 
+            #self.activeList.setInsrDoneBit(insr)
+            self.toSetDoneBit.append(insr)
+        #print self.toSetDoneBit
             
     def FPM_calc(self):
         #
+        popedFPInsr1 = self.FPqueue.sendInsrForExecution('M')
+        if popedFPInsr1 != 0:
+            self.FPM.addInstruction(popedFPInsr1)
+        else:
+            self.FPM.addInstruction(None)
+        self.FPM.updateHistory()
         insr = self.FPM.popInstruction()
-        print insr
+        #print insr
         if insr == None:
             pass
         else: 
             tag = insr.getTag()
-            self.activeList.setInsrDoneBit(insr)
+            #self.activeList.setInsrDoneBit(insr)
+            self.toSetDoneBit.append(insr)
+            
+    def SLunit_calc(self):
+        insr = self.SLunit.popInstruction()
+        #print 'insr', insr == None, insr.getTag()
+        if insr != None:
+            #print insr.getTag()
+            #print 'Done bit before', insr.getDoneBit()
+            #print '???'
+            #print 'insr == None?', insr == None
+            insr_type = insr.getType()
+            #self.activeList.setInsrDoneBit(insr)
+            #print 'Done bit now', insr.getDoneBit()
+            self.toSetDoneBit.append(insr)
+            insr.addHistory(insr_type)
             
     def SLunit_edge(self):
+        if self.ls_r != None:
+            #print 'SLunit_edge_to_add', self.ls_r.getTag()
+            if self.ls_r.getDoneBit() != 1:
+                self.SLunit.addInstruction(self.ls_r)
+                
+    def SL_add_unit_edge(self):
+        #if self.ls_r != None:
+        #    print self.ls_r.getTag(), 'this is self.ls_r'
+        #    print self.ls_r.getDoneBit(), 'this is the Done Bit'
+            #self.activeList.setInsrDoneBit(self.ls_r)
+            #self.SLunit.addInstruction(self.ls_r)
+            #self.ls_r = None
+            #print 'self.ls_r is empty', None == self.ls_r
+        self.addrQueue.updateHistory()        
         self.addrQueue.sendForAddressCalc_edge()
-        
-    def SLunit_calc(self):
-        # addressCalculation
-        self.addrQueue.sendForAddressCalc_calc()
         
         # Load the possible choices of instructions from addrQueue
         insrSet = self.addrQueue.sendForExecution()
+        #print len(insrSet), 'numOfInstructionsToChooseFrom'
         # Find the first store option
         l = len(insrSet)
         first_store_position = -1
         first_store = None
         for i in range(l):
             insr = insrSet[i]
-            insr_type = insr.getType()
-            if insr_type == 'S':
-                first_store = insr
-                first_store_position = i
-                break
-            
+            if insr.getDoneBit() != 1:
+                insr_type = insr.getType()
+                if insr_type == 'S':
+                    first_store = insr
+                    first_store_position = i
+                    break
+                
         # Find the first load option
         first_load_position = -1
         first_load = None
         for i in range(l):
             insr = insrSet[i]
             insr_type = insr.getType()
-            if insr_type == 'L':
-                first_load = insr
-                first_load_position = i
-                break
-        
+            if insr.getDoneBit() != 1:
+                if insr_type == 'L':
+                    first_load = insr
+                    first_load_position = i
+                    break
+            
         # If the first option is load, execute it
         if first_load_position == 0:
             tag = first_load.getTag()
-            self.activeList.setInsrDoneBit(first_load)
+            self.ls_r = first_load
+            #self.activeList.setInsrDoneBit(first_load)
             # reset the destination busy bit
             args = first_load.getArgs()
             args[0].setBusyBit(0)
@@ -243,55 +301,133 @@ class simulator:
             # if it is at the head of activeList, go
             activeListHead = self.activeList.getElem(0)
             if first_store.getTag() == activeListHead.getTag():
-                self.activeList.setInsrDoneBit(first_store)
+                self.ls_r = first_store
+                #self.activeList.setInsrDoneBit(first_store)
                 # else, execute the first load option, if any
             else:
                 if (first_load != 0) and (first_load != None):
-                    self.activeList.setInsrDoneBit(first_load)
+                    self.ls_r = first_load
+                    #self.activeList.setInsrDoneBit(first_load)
                     args = first_load.getArgs()
-                    args[0].setBusyBit(0)    
+                    args[0].setBusyBit(0)
+        
+        if self.ls_r != None:        
+            if self.ls_r.getType == 'L':
+                args = self.ls_r.getArgs()
+                args[0].setBusyBit(0)
+        #print self.ls_r, 'this is self.ls_r'
         # TODO: check if it belons to here            
-        self.addrQueue.updateHistory()
+        
+
+        
+    def SL_add_unit_calc(self):
+        # addressCalculation
+        self.addrQueue.sendForAddressCalc_calc()
+        
+        ## Load the possible choices of instructions from addrQueue
+        #insrSet = self.addrQueue.sendForExecution()
+        #print len(insrSet), 'numOfInstructionsToChooseFrom'
+        ## Find the first store option
+        #l = len(insrSet)
+        #first_store_position = -1
+        #first_store = None
+        #for i in range(l):
+            #insr = insrSet[i]
+            #if insr.getDoneBit() != 1:
+                #insr_type = insr.getType()
+                #if insr_type == 'S':
+                    #first_store = insr
+                    #first_store_position = i
+                    #break
+                
+        ## Find the first load option
+        #first_load_position = -1
+        #first_load = None
+        #for i in range(l):
+            #insr = insrSet[i]
+            #insr_type = insr.getType()
+            #if insr.getDoneBit() != 1:
+                #if insr_type == 'L':
+                    #first_load = insr
+                    #first_load_position = i
+                    #break
+            
+        ## If the first option is load, execute it
+        #if first_load_position == 0:
+            #tag = first_load.getTag()
+            #self.ls_r = first_load
+            ##self.activeList.setInsrDoneBit(first_load)
+            ## reset the destination busy bit
+            #args = first_load.getArgs()
+            #args[0].setBusyBit(0)
+        ## else, if the first option is store
+        #elif first_store_position == 0:
+            ## if it is at the head of activeList, go
+            #activeListHead = self.activeList.getElem(0)
+            #if first_store.getTag() == activeListHead.getTag():
+                #self.ls_r = first_store
+                ##self.activeList.setInsrDoneBit(first_store)
+                ## else, execute the first load option, if any
+            #else:
+                #if (first_load != 0) and (first_load != None):
+                    #self.ls_r = first_load
+                    ##self.activeList.setInsrDoneBit(first_load)
+                    #args = first_load.getArgs()
+                    #args[0].setBusyBit(0)    
+        ## TODO: check if it belons to here            
+        
         
     def execution_calc(self):
-        print 'execution'
+        #print 'execution'
         self.ALU_calc()
         self.FPA_calc()   
         self.FPM_calc()
+        self.SL_add_unit_calc()
         self.SLunit_calc()
         # get the refill units to ALU ready
-        popedInsr = self.integerQueue.sendInsrForExecution()
-        popedFPInsr1 = self.FPqueue.sendInsrForExecution('A')
-        popedFPInsr2 = self.FPqueue.sendInsrForExecution('M')
-        self.execution_r = [popedInsr, popedFPInsr1, popedFPInsr2]
+        #popedInsr = self.integerQueue.sendInsrForExecution()
+        #popedFPInsr1 = self.FPqueue.sendInsrForExecution('A')
+        #popedFPInsr2 = self.FPqueue.sendInsrForExecution('M')
+        #self.execution_r = [popedFPInsr1, popedFPInsr2]
         
     def execution_edge(self):
         # Then fill the pipeline with the next instruction
         #if (len(self.integerQueue.queue)>0) and (self.ALU.getLength() == 0):
-        insrToFill, insrToFillFPA, insrToFillFPM = self.execution_r
+        #insrToFill, 
+        #insrToFillFPA, insrToFillFPM = self.execution_r
         
-        if insrToFill != 0:
-            self.ALU.addInstruction(insrToFill)
+        #if insrToFill != 0:
+        #    self.ALU.addInstruction(insrToFill)
             
-        if insrToFillFPA != 0:
-            self.FPA.addInstruction(insrToFillFPA)
-        else:
-            self.FPA.addInstruction(None)
+        #if insrToFillFPA != 0:
+        #    self.FPA.addInstruction(insrToFillFPA)
+        #else:
+        #    self.FPA.addInstruction(None)
             
-        if insrToFillFPM != 0:
-            self.FPM.addInstruction(insrToFillFPM)
-        else:
-            self.FPM.addInstruction(None)
-            
+        #if insrToFillFPM != 0:
+        #    self.FPM.addInstruction(insrToFillFPM)
+        #else:
+        #    self.FPM.addInstruction(None)
+        #return 0    
         
+        self.SL_add_unit_edge()
         self.SLunit_edge()
-            
-        self.FPA.updateHistory()
-        self.FPM.updateHistory()
-        self.activeList.updateHistory()
+        #self.FPA.updateHistory()
+        #self.FPM.updateHistory()
+        #self.activeList.updateHistory()
         
+    def commit_edge(self):
+        self.activeList.updateHistory()
+        lst = self.toSetDoneBit
+        l = len(lst)
+        for i in range(l):
+            insr = lst[i]
+            #print insr.getTag()
+            self.activeList.setInsrDoneBit(insr)
+        self.toSetDoneBit = []
+            
     def commit_calc(self):
-        print 'commiting'
+        #print 'commiting'
         for i in range(min(4, self.activeList.getLength())):
             insr = self.activeList.graduateInstruction()
             if insr != 0:
@@ -311,19 +447,19 @@ class simulator:
                 elif (insr_type == 'S'):
                     # pop that instruction from addrQueue
                     self.addrQueue.popInstruction()
-                    insr.popHistory()
-                    insr.addHistory('S')
+                    #insr.popHistory()
+                    #insr.addHistory('S')
                     pass
                 elif (insr_type == 'L'):
                     # free the old register
                     mapInfo = insr.getRegMapInfo()
-                    print mapInfo, 'this is mapInfo'
+                    #print mapInfo, 'this is mapInfo'
                     old_reg = mapInfo[1]
                     self.freeList.addReg(old_reg)
                     # pop that instruction from addrQueue
                     self.addrQueue.popInstruction()
-                    insr.popHistory()
-                    insr.addHistory('L')
+                    #insr.popHistory()
+                    #insr.addHistory('L')
                     
                 insr.addHistory('C')
                 print insr.getHistory()
@@ -353,12 +489,17 @@ class simulator:
         self.updateHistoryInIntegerQueue()
         self.updateHistoryInFPQueue()
         
-        self.fetch_edge()
-        self.decode_edge()
-        self.issue_edge()
+        
+        
+        
+                
+        
+        
+        self.commit_edge()
         self.execution_edge()
-        
-        
+        self.issue_edge()
+        self.decode_edge()
+        self.fetch_edge()
         
     
     
