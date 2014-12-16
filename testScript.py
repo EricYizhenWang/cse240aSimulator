@@ -35,17 +35,21 @@ def testSimulator_1():
     sim = simulator()
     insr_queue = deque()
     insr_counter = 0
-    for i in range(10):
-        insr = instruction('I', [1, 1, 1], insr_counter)
-        insr_queue.append(insr)
-        insr_counter = insr_counter+1
+    for i in range(30):
+        #insr = instruction('I', [1, 1, 1], insr_counter)
+        #insr_queue.append(insr)
+        #insr_counter = insr_counter+1
         
         insr = instruction('A', [i+1, i+1, i+1], insr_counter)
         insr_queue.append(insr)
         insr_counter = insr_counter+1
         
+        insr = instruction('M', [i+1, i+1, i+1], insr_counter)
+        insr_queue.append(insr)
+        insr_counter = insr_counter+1        
+        
     sim.setInsrSet(insr_queue)
-    for i in range(10):
+    for i in range(50):
         print 'clock index:', i
         sim.oneClock()
         
@@ -107,7 +111,7 @@ def testSimulator_3():
     sim = simulator()
     insr_queue = deque()
     insr_counter = 0
-    for i in range(3):
+    for i in range(100):
         insr = instruction('S', [1, 1, 10], insr_counter)
         insr_queue.append(insr)
         insr_counter = insr_counter+1
@@ -118,7 +122,7 @@ def testSimulator_3():
         
     sim.setInsrSet(insr_queue)
     insr = insr_queue[0]
-    for i in range(30):
+    for i in range(100):
         print 'clock index:', i
         sim.oneClock()
         #print insr.getHistory(), 'history 00'

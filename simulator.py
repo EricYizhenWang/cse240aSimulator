@@ -108,12 +108,22 @@ class simulator:
         # This function resolves the insr's arguments into physical registers
         #args = insr.getArgs()
         type_insr = insr.getType()
+        numSpareReg = self.freeList.numSpareReg()
         if (type_insr == 'I') or (type_insr == 'A') or (type_insr == 'M'):
-            self.resolveOperand_I_A_M(insr)
+            if numSpareReg > 0:
+                self.resolveOperand_I_A_M(insr)
+                return 0
+            else:
+                return insr
         elif (type_insr == 'S'):
             self.resolveOperand_S(insr)
+            return 0
         elif (type_insr == 'L'):
-            self.resolveOperand_L(insr)
+            if numSpareReg > 0:
+                self.resolveOperand_L(insr)
+                return 0
+            else:
+                return insr
         
     def fetch_calc(self):
         insrSet = deque()
@@ -133,14 +143,28 @@ class simulator:
     def decode_calc(self):
         #print 'decoding'
         decode_q = deque()
+        recycle_q = deque()
         l = min(4, self.fetchedList.getLength())
         for i in range(l):
             insr = self.fetchedList.popInstruction()
             #Assume Integer operation now
-            self.resolveOperand(insr)
-            insr.addHistory('D')
-            decode_q.append(insr)
+            result = self.resolveOperand(insr)
+            # decode successful if result == 0
+            if result == 0:
+                insr.addHistory('D')
+                decode_q.append(insr)
+            else:
+                recycle_q.append(insr)
         
+        # push the recycle_queue back
+        for i in range(len(recycle_q)):
+            insr = recycle_q.pop()
+            self.fetchedList.addBackInstruction(insr)
+        
+        for i in range(self.fetchedList.getLength()):
+            insr = self.fetchedList.getElem(i)
+            insr.addHistory(' ')
+            
         self.decode_r = decode_q
     
     def decode_edge(self):
@@ -149,23 +173,67 @@ class simulator:
 
     def issue_calc(self):
         #print 'issuing'
+        recycle_queue = deque()
+        
         l = min(4, self.decodedList.getLength())
         toActiveList = deque()
+        activeListSpare = self.activeList.numSpare()
+        
         toIntegerQueue = deque()
+        intQueueSpare = self.integerQueue.numSpare()
+        
         toFPqueue = deque()
+        FPQueueSpare = self.FPqueue.numSpare()
+        print FPQueueSpare, 'num of free FP queue'
+        
         toAddrQueue = deque()
+        addrQueueSpare = self.addrQueue.numSpare()
         for i in range(l):
             insr = self.decodedList.popInstruction()
             insr_type = insr.getType()
-            toActiveList.append(insr)
-            #TODO: add different type of insr here
-            if insr_type == 'I':
-                toIntegerQueue.append(insr)
-            elif (insr_type == 'A') or (insr_type == 'M'):
-                toFPqueue.append(insr)
-            elif (insr_type == 'S') or (insr_type == 'L'):
-                toAddrQueue.append(insr)
-            insr.addHistory('I')
+            
+            if activeListSpare > 0:
+                #TODO: add different type of insr here
+                if insr_type == 'I':
+                    if intQueueSpare > 0:
+                        toIntegerQueue.append(insr)
+                        toActiveList.append(insr)
+                        intQueueSpare = intQueueSpare - 1
+                        activeListSpare = activeListSpare - 1
+                        insr.addHistory('I')
+                    else:
+                        recycle_queue.append(insr)
+                elif (insr_type == 'A') or (insr_type == 'M'):
+                    print FPQueueSpare, 'num of free FP queue'
+                    if FPQueueSpare > 0:
+                        toFPqueue.append(insr)
+                        toActiveList.append(insr)
+                        FPQueueSpare = FPQueueSpare - 1
+                        activeListSpare = activeListSpare - 1
+                        insr.addHistory('I')
+                    else:
+                        recycle_queue.append(insr)
+                elif (insr_type == 'S') or (insr_type == 'L'):
+                    if addrQueueSpare > 0:
+                        toAddrQueue.append(insr)
+                        toActiveList.append(insr)
+                        addrQueueSpare = addrQueueSpare - 1
+                        activeListSpare = activeListSpare -1
+                        insr.addHistory('I')
+                    else: 
+                        recycle_queue.append(insr)
+        # push that recycle_queue entry back. It's actually a stack!
+        l = len(recycle_queue)
+        for i in range(l):
+            insr = recycle_queue.pop()
+            self.decodedList.addBackInstruction(insr)
+            #insr.addHistory(' ')
+        l = self.decodedList.getLength()
+        for i in range(l):
+            insr = self.decodedList.getElem(i)
+            insr.addHistory(' ')
+                
+        print 'numFPadded', len(toFPqueue)
         self.issue_r = [toActiveList, toIntegerQueue, toFPqueue, toAddrQueue]
     
     def issue_edge(self):
@@ -462,7 +530,7 @@ class simulator:
                     #insr.addHistory('L')
                     
                 insr.addHistory('C')
-                print insr.getHistory()
+                print len(insr.getHistory()), insr.getHistory()
                 print 'commiting instruction', insr.getTag()
                 
     def updateHistoryInIntegerQueue(self):

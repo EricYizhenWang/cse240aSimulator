@@ -108,6 +108,9 @@ class freeList:
             new_reg = register('P', i)
             self.queue.append(new_reg)
     
+    def numSpareReg(self):
+        return len(self.queue)
+    
     def setBusyBit(self, index, value):
         self.busyTable[index] = value
         
@@ -148,6 +151,9 @@ class FPqueue:
     
     def isFull(self):
         return len(self.queue) == self.maxSize
+    
+    def numSpare(self):
+        return self.maxSize - len(self.queue)
         
     def addInstruction(self, insr):
         self.queue.append(insr)
@@ -240,8 +246,14 @@ class insrBuffer:
     def getLength(self):
         return len(self.queue)
     
+    def getElem(self, index):
+        return self.queue[index]
+    
     def addInstruction(self, insr):
         self.queue.append(insr)
+        
+    def addBackInstruction(self, insr):
+        self.queue.appendleft(insr)
         
     def addInsrSet(self, insrSet):
         for i in range(len(insrSet)):
@@ -263,6 +275,9 @@ class integerQueue:
     
     def isFull(self):
         return len(self.queue) == self.maxSize
+    
+    def numSpare(self):
+        return self.maxSize - len(self.queue)
         
     def addInstruction(self, insr):
         self.queue.append(insr)
@@ -346,6 +361,10 @@ class activeList:
         
     def getLength(self):
         return len(self.queue)
+    
+    def numSpare(self):
+        return self.maxSize - len(self.queue)
+    
     def getContent(self):
         return self.queue
     
@@ -405,6 +424,9 @@ class addressQueue():
         
     def isFull(self):
         return len(self.queue) == self.numMax
+    
+    def numSpare(self):
+        return self.numMax - len(self.queue)
     
     def popID(self):
         return self.addrIDq.popleft()
