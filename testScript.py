@@ -1,6 +1,14 @@
 from basicComponents import instruction, activeList, regMapTable
 from simulator import simulator
 from collections import deque
+from interface import interface
+
+def test(i):
+    a = interface()
+    a.loadTestInsr('test'+str(i))
+    a.test()
+    a.printHistory('output')
+    a.printInsrStats('stats')
 
 def testActiveList_1():
     a = activeList()

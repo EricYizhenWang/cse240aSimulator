@@ -19,7 +19,11 @@ class instruction:
         # This entry remembers its ID in the address_queue for the sake of 
         # indetermination matrix implementation
         self.addrID = None
-    
+        # This entry is for the branch instruction to know if it's taken
+        # 0 taken, 1 not taken
+        self.taken = 0
+        # self.fetchedTime 
+        self.fecthedTime = 0
     
     def getAddrID(self):
         return self.addrID  
@@ -218,6 +222,13 @@ class FPunit:
     def reduceFinishTime(self):
         self.queue.finishTime = self.queue.finishTime - 1
         
+    def peekInstruction(self):
+        if len(self.queue) != 0:
+            insr = self.queue[0]
+            return insr
+        else:
+            return None
+        
     def popInstruction(self):
         if len(self.queue) != 0:
             insr = self.queue.popleft()
@@ -306,6 +317,7 @@ class integerQueue:
             flag = 1
             for j in range(1,len(args)):
                 #print args[j]
+                #print args[j].getTag(), args[j].getBusyBit()
                 if args[j] == 0:
                     pass
                 elif args[j].getBusyBit() == 1:
@@ -332,6 +344,12 @@ class ALU:
     
     def addInstruction(self, insr):
         self.queue.append(insr)
+        
+    def peekInstruction(self):
+        if len(self.queue) != 0:
+            return self.queue[0]
+        else:
+            return None
         
     def popInstruction(self):
         if len(self.queue) != 0:
@@ -506,14 +524,15 @@ class addressQueue():
                     # if the source is ready
                     if srs.getBusyBit() == 0:
                         self.toCalc = insr
-                        print self.toCalc.getTag(), 'hello'
-                        insr.addHistory('AddrC')
+                        #print self.toCalc.getTag(), srs.getTag(), srs.getBusyBit(), 'address Resolved', insr.getTag()
+                        insr.addHistory('R')
                         return insr
                 elif insr_type == 'S':
                     if (args[0].getBusyBit() == 0) and (args[1].getBusyBit() == 0):
                         self.toCalc = insr
+                        #print self.toCalc.getTag(), 'address Resolved', insr.getTag()
                         #print self.toCalc.getTag(), 'hello'
-                        insr.addHistory('AddrC')
+                        insr.addHistory('R')
                         return insr
         return None
             
@@ -556,14 +575,45 @@ class SLunit():
     def addInstruction(self, insr):
         self.queue.append(insr)
         
+    def peekInstruction(self):
+        if len(self.queue)!=0:
+            insr = self.queue[0]
+            return insr
+        else:
+            return None        
+        
     def popInstruction(self):
         #print 'SLUnit Length', len(self.queue)
         if len(self.queue)!=0:
             insr = self.queue.popleft()
-            #print 'SLUnit Length', len(self.queue)
-            #print insr.getTag()
             return insr
         else:
             return None
             
+class branchBuffer:
+    def __init__(self):
+        self.queue = deque()
+        
+    def addContext(self, context):
+        self.queue.append(context)
+        
+    def peekContext(self):
+        if len(self.queue)!=0:
+            return self.queue[0]
+        else:
+            return None
+        
+    def popContext(self):
+        if len(self.queue)!=0:
+            return self.queue.popleft()
+        else:
+            return None
+    
+class branchContext:
+    def __init__(self, regMapTable, freeList):
+        self.regMapTable = regMapTable
+        self.freeList = freeList
+        
+    def getRegMapTable(self):
+        return regMapTable()
                 
